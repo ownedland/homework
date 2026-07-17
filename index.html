@@ -271,6 +271,13 @@
   }
   .ord-btn:hover:not(:disabled){color:var(--amber);border-color:var(--amber)}
   .ord-btn:disabled{opacity:.22;cursor:default}
+  .del-track{
+    background:none;border:1px solid var(--line);color:var(--cream-dim);
+    border-radius:2px;width:26px;height:39px;cursor:pointer;
+    font-size:12px;line-height:1;padding:0;font-family:inherit;margin-left:6px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .del-track:hover{color:var(--cut);border-color:var(--cut)}
   .track-list{max-height:420px;overflow-y:auto}
   .track{
     display:flex;gap:12px;padding:12px 16px;cursor:pointer;
@@ -291,6 +298,14 @@
   .track .t-sub b{color:var(--cut)}
   .empty-list{padding:32px 16px;text-align:center;color:var(--cream-dim);font-size:13px;line-height:1.7}
 
+  .pl-note{
+    padding:10px 16px;font-size:11px;line-height:1.6;
+    color:var(--cream-dim);border-top:1px solid var(--ink-3);
+  }
+  /* 한글은 기본값이 글자 단위 줄바꿈이라 '살아/납니다' 처럼 잘립니다 */
+  .pl-note, .hint, .gate-warn, .gate-box .lead, .empty-list, .empty-stage, .status{
+    word-break:keep-all;
+  }
   .status{
     padding:10px 16px;font-size:12px;color:var(--cream-dim);
     border-top:1px solid var(--line);min-height:38px;display:flex;align-items:center;gap:8px;
@@ -439,9 +454,13 @@
       </div>
     </div>
 
-    <div style="padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--line)">
-      <button class="ghost" id="saveMarksBtn" style="flex:1">저장 안 된 구간 저장</button>
-      <button class="ghost" id="savePlBtn" style="flex:1">플리 저장</button>
+    <div class="pl-note" id="plNote" style="display:none">
+      ✕ 로 빼도 <b style="color:var(--cream)">표시해둔 구간은 지워지지 않아요.</b><br>
+      다시 추가하면 그대로 살아납니다.
+    </div>
+
+    <div id="retryRow" style="padding:12px 16px;border-top:1px solid var(--line);display:none">
+      <button class="ghost" id="saveMarksBtn" style="width:100%;border-color:var(--cut);color:var(--cut)">저장 실패 — 다시 시도</button>
     </div>
 
     <div class="status">
@@ -470,6 +489,8 @@ const state = {
   pending: {},         // videoId -> [{start,end}]  (내가 방금 표시한 것)
   lastMark: null,      // 방금 찍은 구간 {id,start,end} — 강조 표시용
   shuffle: false,      // 셔플 재생 여부
+  plDirty: false,      // 플리 저장이 실패해서 다시 보내야 하는 상태
+  plLoaded: false,     // 시트에서 플리를 불러오는 데 성공했는지 (실패 시 덮어쓰기 방지)
   playedIdx: [],       // 셔플 중 이미 나온 곡 (한 바퀴 다 돌 때까지 중복 없음)
   muted: false,
   holding: false,
@@ -545,6 +566,7 @@ async function loadPlaylist(){
     status("플레이리스트 불러오는 중…", "live");
     const d = await api({ action:"getPlaylist" });
     const tracks = (d.tracks||[]).filter(t => t && t.id);
+    state.plLoaded = true;
     if(!tracks.length){ status(state.user.nick + " — 저장된 곡 없음. 유튜브 주소를 넣어보세요", "live"); return; }
     state.playlist = tracks.map(t => ({
       id: t.id,
@@ -654,6 +676,35 @@ function next(){
   else status("플레이리스트 끝");
 }
 
+/* 플리에서 곡 빼기 — 그 곡의 뮤트포인트는 시트에 그대로 남습니다 */
+function removeTrack(i){
+  if(i < 0 || i >= state.playlist.length) return;
+  const wasPlaying = (i === state.index);
+  const playingId = curId();
+  const title = state.playlist[i].title;
+  const kept = allMarks(state.playlist[i].id).length;
+
+  state.playlist.splice(i, 1);
+  state.playedIdx = [];
+
+  if(!state.playlist.length){
+    state.index = -1;
+    $("emptyStage").style.display = "flex";
+    $("holdBtn").disabled = true;
+    try { player.stopVideo(); } catch(e){}
+    renderPlaylist(); renderMarks(); renderTimeline();
+  } else if(wasPlaying){
+    play(Math.min(i, state.playlist.length - 1));
+  } else {
+    state.index = state.playlist.findIndex(x => x.id === playingId);
+    renderPlaylist();
+  }
+  status(kept
+    ? `플리에서 뺐어요 — 표시해둔 구간 ${kept}개는 남아있어서, 다시 추가하면 그대로 살아나요`
+    : `플리에서 뺐어요: ${title}`);
+  savePlaylist();
+}
+
 /* 곡 순서 바꾸기 — 재생 중인 곡은 따라갑니다 */
 function moveTrack(i, dir){
   const j = i + dir;
@@ -731,11 +782,18 @@ function holdUp(){
 }
 
 /* ---------- 저장 ---------- */
+/* 저장 못 한 게 남아 있을 때만 재시도 버튼을 띄웁니다 */
+function refreshRetry(){
+  const id = curId();
+  const hasPending = !!(id && (state.pending[id]||[]).length);
+  $("retryRow").style.display = (hasPending || state.plDirty) ? "block" : "none";
+}
+
 async function saveMarks(){
   const id = curId();
-  if(!id){ status("재생 중인 곡이 없습니다", "err"); return; }
+  if(!id) return;
   const list = state.pending[id] || [];
-  if(!list.length){ status("저장할 새 구간이 없습니다"); return; }
+  if(!list.length){ refreshRetry(); return; }
   try{
     status("내 구간 저장 중…", "live");
     await api({ action:"saveMarks", videoId:id, title: state.playlist[state.index].title, marks:list });
@@ -743,21 +801,32 @@ async function saveMarks(){
     state.pending[id] = [];
     renderMarks(); renderTimeline(); renderPlaylist();
     status("저장 완료 — 다음부터 이 곡은 자동 음소거됩니다", "live");
-  }catch(e){ status(e.message + " · 다시 저장 버튼을 눌러주세요", "err"); }
+  }catch(e){
+    status("저장 실패: " + e.message, "err");
+  }
+  refreshRetry();
 }
+/* 곡 추가·순서 변경·삭제 때 자동으로 불립니다 (버튼 없음) */
 async function savePlaylist(){
-  if(!state.playlist.length){ status("플리가 비어 있습니다"); return; }
+  if(!state.plLoaded){
+    status("플리를 아직 못 불러왔어요 — 새로고침 후 다시 해주세요", "err");
+    return;
+  }
   try{
-    status("플레이리스트 저장 중…", "live");
     await api({ action:"savePlaylist", tracks: state.playlist.map(t => ({id:t.id, title:t.title})) });
-    status("플레이리스트 " + state.playlist.length + "곡 저장됨", "live");
-  }catch(e){ status(e.message, "err"); }
+    state.plDirty = false;
+  }catch(e){
+    state.plDirty = true;
+    status("플리 저장 실패: " + e.message, "err");
+  }
+  refreshRetry();
 }
 
 /* ---------- 렌더 ---------- */
 function renderPlaylist(){
   const el = $("trackList");
   $("plCount").textContent = state.playlist.length + "곡";
+  $("plNote").style.display = state.playlist.length ? "block" : "none";
   if(!state.playlist.length){
     el.innerHTML = `<div class="empty-list">아직 곡이 없습니다.<br>유튜브 주소를 붙여넣고 추가하세요.</div>`;
     return;
@@ -779,6 +848,7 @@ function renderPlaylist(){
         <button class="ord-btn" data-up="${i}" ${i===0?"disabled":""} title="위로">▲</button>
         <button class="ord-btn" data-down="${i}" ${i===last?"disabled":""} title="아래로">▼</button>
       </div>
+      <button class="del-track" data-rm="${i}" title="플리에서 빼기 — 표시해둔 구간은 남습니다">✕</button>
     </div>`;
   }).join("");
   el.querySelectorAll(".track").forEach(n =>
@@ -788,6 +858,9 @@ function renderPlaylist(){
   }));
   el.querySelectorAll("[data-down]").forEach(b => b.addEventListener("click", e => {
     e.stopPropagation(); moveTrack(+b.dataset.down, 1);
+  }));
+  el.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation(); removeTrack(+b.dataset.rm);
   }));
 }
 
@@ -833,8 +906,6 @@ function renderMarks(){
       <button class="icon-btn" data-del="${i}">삭제</button>
     </div>`;
   }).join("");
-  const freshEl = el.querySelector(".mark-row.fresh");
-  if(freshEl) freshEl.scrollIntoView({ block:"nearest" });
   el.querySelectorAll("[data-play]").forEach(b => b.addEventListener("click", () => {
     const m = rows[+b.dataset.play];
     try { player.seekTo(Math.max(0, m.start - 2), true); player.playVideo(); } catch(e){}
@@ -872,8 +943,13 @@ function escapeHtml(s){
 /* ---------- 이벤트 ---------- */
 $("addBtn").addEventListener("click", addTrack);
 $("urlInput").addEventListener("keydown", e => { if(e.key === "Enter") addTrack(); });
-$("saveMarksBtn").addEventListener("click", saveMarks);
-$("savePlBtn").addEventListener("click", savePlaylist);
+$("saveMarksBtn").addEventListener("click", async () => {
+  const btn = $("saveMarksBtn");
+  btn.disabled = true; btn.textContent = "저장 중…";
+  await saveMarks();
+  if(state.plDirty) await savePlaylist();
+  btn.disabled = false; btn.textContent = "저장 실패 — 다시 시도";
+});
 
 $("shuffleBtn").addEventListener("click", () => {
   state.shuffle = !state.shuffle;
