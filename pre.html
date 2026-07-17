@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MUTE POINT — 발표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:      #191a1f;   
+    --surface: #22242b;   
+    --cream:   #ece7dd;   
+    --dim:     #8f8d88;   
+    --amber:   #ffb020;   
+    --dead:    #383b45;   
+    --cut:     #e5432f;   
+
+    --display: 'Archivo Black', 'IBM Plex Sans KR', sans-serif;
+    --body:    'IBM Plex Sans KR', system-ui, sans-serif;
+    --mono:    'IBM Plex Mono', ui-monospace, monospace;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html, body{
+    height:100%;
+    background:var(--bg);
+    color:var(--cream);
+    font-family:var(--body);
+    overflow:hidden;
+  }
+
+  /* ── 덱 ─────────────────────────────── */
+  .deck{ position:relative; width:100vw; height:100vh; }
+
+  .slide{
+    position:absolute; inset:0;
+    display:none;
+    padding:clamp(32px, 5vw, 80px);
+    opacity:0;
+    transition:opacity .35s ease;
+  }
+  .slide.is-active{ display:flex; opacity:1; }
+
+  /* ── 슬라이드 1 : 타이틀 ─────────────── */
+  #slide-1{
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:clamp(28px, 4vh, 52px);
+  }
+
+  .wave{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:clamp(3px, .5vw, 6px);
+    height:clamp(70px, 12vh, 120px);
+    width:min(760px, 82vw);
+  }
+
+  .bar{
+    flex:1;
+    min-width:2px;
+    border-radius:2px;
+    background:var(--amber);
+    height:14%;
+    transform-origin:center;
+    animation:pulse 1.1s ease-in-out infinite alternate;
+  }
+  .bar.is-dead{
+    background:var(--dead);
+    height:3px !important;
+    animation:none;
+  }
+
+  @keyframes pulse{
+    from{ height:12%; }
+    to{ height:var(--peak, 70%); }
+  }
+
+  .playhead{
+    position:absolute;
+    top:-10%; bottom:-10%;
+    width:2px;
+    background:var(--cream);
+    opacity:.85;
+    animation:sweep 8s linear infinite;
+  }
+  @keyframes sweep{
+    from{ left:0%; }
+    to{ left:100%; }
+  }
+
+  .mute-chip{
+    position:absolute;
+    left:49%;
+    transform:translateX(-50%);
+    top:calc(100% + 14px);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.22em;
+    color:var(--bg);
+    background:var(--cream);
+    padding:3px 9px;
+    border-radius:2px;
+    opacity:0;
+    animation:chip 8s linear infinite;
+  }
+  @keyframes chip{
+    0%, 39.9%   { opacity:0; }
+    40%, 58%    { opacity:1; }
+    58.1%, 100% { opacity:0; }
+  }
+
+  .wordmark{ text-align:center; }
+
+  .eyebrow{
+    font-family:var(--body);
+    font-weight:300;
+    font-size:clamp(13px, 1.4vw, 17px);
+    letter-spacing:.5em;
+    text-indent:.5em;
+    color:var(--dim);
+    margin-bottom:clamp(10px, 1.6vh, 18px);
+  }
+
+  .title{
+    font-family:var(--display);
+    font-size:clamp(42px, 9.4vw, 150px);
+    line-height:.86;
+    letter-spacing:-.035em;
+    white-space:nowrap;
+    color:var(--cream);
+  }
+
+  .credit{
+    text-align:center;
+    font-family:var(--mono);
+    font-size:clamp(15px, 1.9vw, 24px);
+    letter-spacing:.05em;
+    color:var(--dim);
+    line-height:1.75;
+  }
+  .credit strong{
+    color:var(--cream);
+    font-weight:500;
+  }
+  .rule{
+    width:56px;
+    height:1px;
+    background:var(--dead);
+    margin:0 auto clamp(20px, 2.6vh, 30px);
+  }
+
+  /* ── 공통 슬라이드 레이아웃 ─────────────── */
+  .slide:not(#slide-1){
+    flex-direction:column;
+    justify-content:center;
+    gap:clamp(18px, 2.8vh, 34px);
+  }
+  .col{
+    width:100%;
+    max-width:1060px;
+    margin:0 auto;
+  }
+
+  .label{
+    font-family:var(--mono);
+    font-size:clamp(10px, .95vw, 12px);
+    letter-spacing:.26em;
+    color:var(--cut);
+    margin-bottom:clamp(10px, 1.4vh, 16px);
+  }
+
+  .head{
+    font-family:var(--body);
+    font-weight:700;
+    font-size:clamp(24px, 3.9vw, 54px);
+    line-height:1.24;
+    letter-spacing:-.03em;
+    word-break:keep-all;
+  }
+  .head em{ font-style:normal; color:var(--amber); }
+
+  .body-text{
+    font-size:clamp(14px, 1.5vw, 20px);
+    font-weight:300;
+    line-height:1.75;
+    color:var(--dim);
+    word-break:keep-all;
+    max-width:44em;
+    margin-top: 24px;
+  }
+  .punch{
+    margin-top:.7em;
+    font-size:clamp(17px, 2.1vw, 28px);
+    font-weight:600;
+    letter-spacing:-.02em;
+    color:var(--cream);
+    word-break:keep-all;
+  }
+
+  /* 강조 박스 (DB/배포 어필용) */
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--dead);
+    border-radius: 8px;
+    padding: 30px;
+    margin-top: 30px;
+    max-width: 800px;
+  }
+  .highlight-box ul {
+    list-style: none;
+    margin-top: 15px;
+  }
+  .highlight-box li {
+    font-size: clamp(15px, 1.7vw, 22px);
+    color: var(--cream);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .highlight-box li::before {
+    content: '✔️';
+    font-size: 14px;
+  }
+
+  /* 트랙 바 애니메이션 */
+  .track-bar{
+    position:relative;
+    height:clamp(54px, 8.5vh, 78px);
+    background:var(--surface);
+    border:1px solid var(--dead);
+    border-radius:3px;
+    overflow:hidden;
+    margin-top: 30px;
+  }
+  .word{
+    position:absolute; top:0; bottom:0;
+    width:3%;
+    background:var(--dim);
+    opacity:.3;
+  }
+  .word.hit{ background:var(--cut); opacity:1; }
+  .ph{
+    position:absolute; top:0; bottom:0;
+    width:2px; left:0;
+    background:var(--amber);
+    box-shadow:0 0 8px var(--amber);
+    animation: sweep 6s linear infinite;
+  }
+
+  /* ── 하단 UI ────────────────────────── */
+  .counter{
+    position:fixed;
+    right:clamp(20px, 3vw, 40px);
+    bottom:clamp(18px, 2.6vh, 32px);
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.1em;
+    color:var(--dead);
+    user-select:none;
+  }
+  .counter b{ color:var(--dim); font-weight:400; }
+
+  .hint{
+    position:fixed;
+    left:clamp(20px, 3vw, 40px);
+    bottom:clamp(18px, 2.6vh, 32px);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    color:var(--dead);
+    user-select:none;
+  }
+
+  .nav{
+    position:fixed;
+    top:0; bottom:0;
+    width:14vw;
+    border:0;
+    background:transparent;
+    cursor:pointer;
+    opacity:0;
+    transition:opacity .2s;
+  }
+  .nav:hover{ opacity:1; }
+  .nav:focus-visible{ opacity:1; outline:1px solid var(--amber); outline-offset:-6px; }
+  #prev{ left:0; }
+  #next{ right:0; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+    .mute-chip{ opacity:1; }
+  }
+</style>
+</head>
+<body>
+
+<main class="deck">
+
+  <!-- ───────── 1. 타이틀 ───────── -->
+  <section class="slide is-active" id="slide-1">
+    <div class="wave" id="wave" aria-hidden="true">
+      <div class="playhead"></div>
+      <div class="mute-chip">MUTE</div>
+    </div>
+    <div class="wordmark">
+      <p class="eyebrow">뮤트 포인트</p>
+      <h1 class="title">MUTE POINT</h1>
+    </div>
+    <div class="credit">
+      <div class="rule"></div>
+      영남대학교 경영학과<br />
+      22413031 <strong>송윤지</strong>
+    </div>
+  </section>
+
+  <!-- ───────── 2. 문제 제기 (공감 유도) ───────── -->
+  <section class="slide" id="slide-2">
+    <div class="col">
+      <div class="label">01 / PROBLEM</div>
+      <h2 class="head">부모님과 음악을 듣다 갑자기 흘러나온<br><em>욕설 가사</em>, 그리고 찾아온 정적.</h2>
+      
+      <div class="track-bar" aria-hidden="true">
+        <div class="word" style="left: 20%;"></div>
+        <div class="word hit" style="left: 45%;"></div> <!-- 욕설 구간 -->
+        <div class="word" style="left: 70%;"></div>
+        <div class="ph"></div>
+      </div>
+
+      <p class="body-text">명곡이지만 차마 가족과 함께 듣기 민망한 비속어들.<br>매번 타이밍을 맞춰 볼륨을 줄이거나 다음 곡으로 넘기는 것은 피곤한 감정 노동입니다.</p>
+      <p class="punch">"이 불편한 뻘쭘함을 기술로 해결할 수는 없을까?"</p>
+    </div>
+  </section>
+
+  <!-- ───────── 3. 솔루션 제시 ───────── -->
+  <section class="slide" id="slide-3">
+    <div class="col">
+      <div class="label">02 / SOLUTION</div>
+      <h2 class="head">단 한 번의 수동 필터링,<br>영구적인 <em>클린 버전 자동 재생</em>.</h2>
+      
+      <p class="body-text">MUTE POINT는 사용자가 랩을 들으며 욕설 구간을 직접 'MUTE' 처리하는 웹 서비스입니다.<br>한 번만 타이밍을 기록해두면, 다음부터는 해당 구간이 자동으로 음소거되어 쾌적하게 감상할 수 있습니다.</p>
+      <p class="punch">더 이상 볼륨 조절에 신경 곤두세울 필요가 없습니다.</p>
+    </div>
+  </section>
+
+
+  <!-- ───────── 3-1. 실제 시연 영상 ───────── -->
+  <section class="slide" id="slide-demo">
+    <div class="col">
+      <div class="label">02-1 / DEMO</div>
+      <h2 class="head"><em>MUTE POINT</em> 실제 작동 화면</h2>
+      
+      <!-- 비디오 플레이어 -->
+      <div style="margin-top: 30px; border: 1px solid var(--dead); border-radius: 8px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <video src="demo.mp4" controls width="100%" style="display: block; max-height: 55vh; object-fit: contain;"></video>
+      </div>
+      
+      <p class="body-text" style="text-align: center; margin-top: 20px;">
+        (▶️ 영상의 재생 버튼을 누르면 실제 필터링되는 오디오를 확인하실 수 있습니다)
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────── 4. 데이터베이스 연동 설명 (영상 앞) ───────── -->
+  <section class="slide" id="slide-db">
+    <div class="col">
+      <div class="label">03 / DATABASE</div>
+      <h2 class="head">구글 시트 백엔드 연동,<br><em>사용자별 맞춤 음소거 데이터</em> 실시간 저장.</h2>
+      
+      <!-- DB 시트 캡처 이미지 -->
+      <div style="margin-top: 30px; border: 1px solid var(--dead); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: var(--bg);">
+        <img src="googlesheet.png" alt="구글 시트 DB 연동 화면" style="width: 100%; max-height: 45vh; object-fit: contain; display: block;">
+      </div>
+      
+      <p class="body-text" style="margin-top: 24px;">
+        사용자가 직접 필터링한 구간은 <strong>구글 시트를 백엔드로 활용</strong>하여 실시간으로 기록됩니다. <br>
+        <code>user</code>별 <code>videoId</code>와 <code>start</code>/<code>end</code> 타임스탬프가 데이터베이스에 구조적으로 저장되어, 재방문 시에도 즉시 쾌적한 감상 환경을 제공합니다.
+      </p>
+    </div>
+  </section>
+
+
+  <!-- ───────── 6. 마무리 ───────── -->
+  <section class="slide" id="slide-6">
+    <div class="col" style="text-align:center;">
+      <h2 class="title" style="font-size:clamp(40px, 7vw, 90px);">THANK YOU</h2>
+      <p class="body-text" style="margin: 20px auto 0; text-align:center;">지금 바로 웹에 접속해서 나만의 클린 버전을 만들어보세요.</p>
+      <div class="rule" style="margin-top: 40px; background:var(--amber);"></div>
+    </div>
+  </section>
+
+</main>
+
+<div class="counter"><b id="cur">01</b> / <span id="tot">01</span></div>
+<div class="hint">← → 로 넘기기 (스페이스바로도 가능)</div>
+<button class="nav" id="prev" aria-label="이전 슬라이드"></button>
+<button class="nav" id="next" aria-label="다음 슬라이드"></button>
+
+<script>
+  /* ── 파형 생성 (슬라이드 1) ── */
+  (function buildWave(){
+    const wave = document.getElementById('wave');
+    const COUNT = 56;
+    const DEAD_FROM = 23, DEAD_TO = 32;   
+
+    for(let i = 0; i < COUNT; i++){
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+
+      if(i >= DEAD_FROM && i <= DEAD_TO){
+        bar.classList.add('is-dead');
+      }else{
+        const peak = 24 + Math.random() * 66;
+        bar.style.setProperty('--peak', peak.toFixed(0) + '%');
+        bar.style.animationDelay  = (-Math.random() * 1.1).toFixed(2) + 's';
+        bar.style.animationDuration = (0.75 + Math.random() * 0.6).toFixed(2) + 's';
+      }
+      wave.appendChild(bar);
+    }
+  })();
+
+  /* ── 슬라이드 이동 로직 ── */
+  (function deck(){
+    const slides = [...document.querySelectorAll('.slide')];
+    const cur = document.getElementById('cur');
+    let i = 0;
+
+    document.getElementById('tot').textContent = String(slides.length).padStart(2, '0');
+
+    function go(n){
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, k) => s.classList.toggle('is-active', k === i));
+      cur.textContent = String(i + 1).padStart(2, '0');
+    }
+
+    document.getElementById('next').onclick = () => go(i + 1);
+    document.getElementById('prev').onclick = () => go(i - 1);
+
+    addEventListener('keydown', e => {
+      if(e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown'){ e.preventDefault(); go(i + 1); }
+      if(e.key === 'ArrowLeft'  || e.key === 'PageUp'){ e.preventDefault(); go(i - 1); }
+      if(e.key === 'Home'){ go(0); }
+      if(e.key === 'End'){ go(slides.length - 1); }
+    });
+  })();
+</script>
+
+</body>
+</html>
