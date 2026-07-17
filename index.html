@@ -6,6 +6,13 @@
 <title>MUTE POINT</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23191a1f'/><g fill='%23ece7dd'><rect x='4' y='10' width='4' height='12' rx='2'/><rect x='10' y='4' width='4' height='24' rx='2'/><rect x='24' y='8' width='4' height='16' rx='2'/></g><rect x='16' y='14' width='6' height='4' rx='2' fill='%23e5432f'/></svg>">
 <meta name="theme-color" content="#191a1f">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MUTE POINT">
+<meta property="og:description" content="욕설 구간만 자동으로 음소거되는 유튜브 플레이어">
+<meta property="og:url" content="https://ownedland.github.io/homework/">
+<meta property="og:image" content="https://ownedland.github.io/homework/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -73,6 +80,15 @@
   .wordmark{font-size:26px;font-weight:900;letter-spacing:-0.04em}
   .tagline{font-size:11px;letter-spacing:0.18em;color:var(--cream-dim);text-transform:uppercase}
   .subtitle{font-size:13px;color:var(--cream-dim);margin-left:auto}
+  .user{margin-left:auto;display:flex;align-items:center;gap:9px}
+  .avatar{
+    width:28px;height:28px;border-radius:50%;
+    background:var(--amber);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:14px;flex-shrink:0;
+  }
+  .uname{color:var(--amber);font-weight:800;font-size:15px}
+  .uplay{color:var(--cream);font-size:15px;font-weight:600}
 
   /* ---------- 레이아웃 ---------- */
   main{
@@ -83,6 +99,7 @@
     main{grid-template-columns:1fr;padding:16px;gap:16px}
     header{padding:14px 16px}
     .subtitle{width:100%;margin-left:0}
+    .user{width:100%;margin-left:0;margin-top:2px}
   }
 
   .panel{
@@ -159,25 +176,30 @@
   /* ---------- 홀드 버튼 ---------- */
   .hold-zone{padding:0 16px 16px}
   .hold-btn{
-    width:100%;padding:20px;border:1px solid var(--line);
-    background:var(--ink-3);color:var(--cream);
+    width:100%;padding:17px 20px;
+    background:var(--cream);color:var(--ink);
+    border:1px solid var(--cream);
+    border-bottom:4px solid #a8a294;
     border-radius:var(--radius);cursor:pointer;
     font-family:inherit;font-size:16px;font-weight:700;
-    display:flex;flex-direction:column;align-items:center;gap:6px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
     user-select:none;-webkit-user-select:none;touch-action:none;
-    transition:background .08s,border-color .08s,transform .06s;
+    transition:background .08s,transform .06s,border-bottom-width .06s;
   }
-  .hold-btn:hover{border-color:var(--cream-dim)}
-  .hold-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .hold-face{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:800}
+  .hold-btn:hover{background:#fff}
+  .hold-btn:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
   .hold-btn.holding{
-    background:var(--cut);border-color:var(--cut);color:#fff;transform:scale(.995);
+    background:var(--cut);border-color:var(--cut);
+    border-bottom-color:#a52d20;border-bottom-width:1px;
+    color:#fff;transform:translateY(3px);
   }
   .hold-btn small{
-    font-size:11px;font-weight:400;letter-spacing:.08em;
-    color:var(--cream-dim);text-transform:uppercase;
+    font-size:11px;font-weight:500;
+    color:#6b6659;text-transform:none;letter-spacing:0;
   }
-  .hold-btn.holding small{color:rgba(255,255,255,.75)}
-  .hold-btn:disabled{opacity:.4;cursor:not-allowed}
+  .hold-btn.holding small{color:rgba(255,255,255,.8)}
+  .hold-btn:disabled{opacity:.35;cursor:not-allowed}
 
   /* ---------- 구간 목록 ---------- */
   .marks{padding:0 16px 16px}
@@ -232,6 +254,23 @@
   }
   button.ghost:hover{border-color:var(--cream-dim)}
 
+  .shuffle-btn{
+    background:none;border:1px solid var(--line);color:var(--cream-dim);
+    border-radius:2px;padding:5px 9px;cursor:pointer;
+    font-family:inherit;font-size:11px;font-weight:600;
+    display:flex;align-items:center;gap:5px;
+  }
+  .shuffle-btn:hover{border-color:var(--cream-dim);color:var(--cream)}
+  .shuffle-btn.on{background:var(--amber);border-color:var(--amber);color:var(--ink);font-weight:800}
+  .ord{display:flex;flex-direction:column;gap:3px;margin-left:auto;flex-shrink:0}
+  .ord-btn{
+    background:none;border:1px solid var(--line);color:var(--cream-dim);
+    border-radius:2px;width:26px;height:18px;cursor:pointer;
+    font-size:9px;line-height:1;padding:0;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .ord-btn:hover:not(:disabled){color:var(--amber);border-color:var(--amber)}
+  .ord-btn:disabled{opacity:.22;cursor:default}
   .track-list{max-height:420px;overflow-y:auto}
   .track{
     display:flex;gap:12px;padding:12px 16px;cursor:pointer;
@@ -320,7 +359,10 @@
   </svg>
   <div class="wordmark">뮤트포인트</div>
   <div class="tagline mono">MUTEPOINT</div>
-  <div class="subtitle"><b class="mono" id="who" style="color:var(--amber)"></b></div>
+  <div class="user">
+    <span class="avatar" id="avatar"></span>
+    <span><span class="uname" id="who"></span><span class="uplay">'s playlist</span></span>
+  </div>
 </header>
 
 <main>
@@ -329,7 +371,7 @@
     <div class="stage">
       <div id="ytHost"></div>
       <div class="empty-stage" id="emptyStage">
-        <div>오른쪽에 유튜브 주소를 붙여넣어 시작하세요</div>
+        <div>유튜브 주소를 붙여넣어 시작하세요</div>
       </div>
       <div class="censor" id="censor" aria-hidden="true">
         <div class="censor-mark mono">■ ■ ■</div>
@@ -343,15 +385,22 @@
       </div>
       <div class="tl-meta mono">
         <span id="curTime">0:00</span>
-        <span id="markCount">등록된 음소거 구간 0개</span>
+        <span id="markCount">내 음소거 구간 0개</span>
         <span id="durTime">0:00</span>
       </div>
     </div>
 
     <div class="hold-zone">
       <button class="hold-btn" id="holdBtn" disabled>
-        욕설 구간 표시 — 꾹 누르고 있기
-        <small>누르는 동안 음소거 · 뗀 순간 구간이 기록됩니다</small>
+        <span class="hold-face">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 5 6 9H2v6h4l5 4V5z"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+          욕설 구간 표시
+        </span>
+        <small>꾹 누르고 있으면 음소거 · 떼면 구간이 저장됩니다</small>
       </button>
     </div>
 
@@ -366,7 +415,17 @@
   <aside class="panel">
     <div class="panel-head">
       <h2>내 플레이리스트</h2>
-      <span class="mono" id="plCount" style="font-size:11px;color:var(--cream-dim)">0곡</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="shuffle-btn" id="shuffleBtn" title="셔플 재생">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+            <line x1="4" y1="4" x2="9" y2="9"/>
+          </svg>
+          셔플
+        </button>
+        <span class="mono" id="plCount" style="font-size:11px;color:var(--cream-dim)">0곡</span>
+      </div>
     </div>
 
     <div class="add-row">
@@ -410,6 +469,8 @@ const state = {
   saved: {},           // videoId -> [{start,end}]  (시트에서 불러온 것)
   pending: {},         // videoId -> [{start,end}]  (내가 방금 표시한 것)
   lastMark: null,      // 방금 찍은 구간 {id,start,end} — 강조 표시용
+  shuffle: false,      // 셔플 재생 여부
+  playedIdx: [],       // 셔플 중 이미 나온 곡 (한 바퀴 다 돌 때까지 중복 없음)
   muted: false,
   holding: false,
   holdStart: null,
@@ -568,6 +629,7 @@ function play(i){
   state.index = i;
   state.duration = 0;
   state.lastMark = null;
+  if(state.shuffle && !state.playedIdx.includes(i)) state.playedIdx.push(i);
   $("emptyStage").style.display = "none";
   $("holdBtn").disabled = false;
   if(player && player.loadVideoById){
@@ -578,8 +640,32 @@ function play(i){
   loadMarks(state.playlist[i].id);
 }
 function next(){
+  if(state.shuffle){
+    const rest = state.playlist.map((t,i) => i).filter(i => !state.playedIdx.includes(i));
+    if(!rest.length){
+      state.playedIdx = [];
+      status("셔플 한 바퀴 다 돌았어요");
+      return;
+    }
+    play(rest[Math.floor(Math.random() * rest.length)]);
+    return;
+  }
   if(state.index + 1 < state.playlist.length) play(state.index + 1);
   else status("플레이리스트 끝");
+}
+
+/* 곡 순서 바꾸기 — 재생 중인 곡은 따라갑니다 */
+function moveTrack(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= state.playlist.length) return;
+  const playingId = curId();
+  const t = state.playlist[i];
+  state.playlist[i] = state.playlist[j];
+  state.playlist[j] = t;
+  if(playingId) state.index = state.playlist.findIndex(x => x.id === playingId);
+  state.playedIdx = [];
+  renderPlaylist();
+  savePlaylist();
 }
 
 /* ---------- 곡 추가 ---------- */
@@ -676,11 +762,12 @@ function renderPlaylist(){
     el.innerHTML = `<div class="empty-list">아직 곡이 없습니다.<br>유튜브 주소를 붙여넣고 추가하세요.</div>`;
     return;
   }
+  const last = state.playlist.length - 1;
   el.innerHTML = state.playlist.map((t,i) => {
     const n = allMarks(t.id).length;
     const p = (state.pending[t.id]||[]).length;
     let sub = n ? `음소거 구간 ${n}개` : "구간 미등록";
-    if(p) sub += ` · <b>제보 대기 ${p}</b>`;
+    if(p) sub += ` · <b>저장 대기 ${p}</b>`;
     return `<div class="track ${i===state.index?"active":""}" data-i="${i}">
       <span class="num mono">${String(i+1).padStart(2,"0")}</span>
       <img src="${t.thumb}" alt="">
@@ -688,10 +775,20 @@ function renderPlaylist(){
         <div class="t-title">${escapeHtml(t.title)}</div>
         <div class="t-sub">${sub}</div>
       </div>
+      <div class="ord">
+        <button class="ord-btn" data-up="${i}" ${i===0?"disabled":""} title="위로">▲</button>
+        <button class="ord-btn" data-down="${i}" ${i===last?"disabled":""} title="아래로">▼</button>
+      </div>
     </div>`;
   }).join("");
   el.querySelectorAll(".track").forEach(n =>
     n.addEventListener("click", () => play(+n.dataset.i)));
+  el.querySelectorAll("[data-up]").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation(); moveTrack(+b.dataset.up, -1);
+  }));
+  el.querySelectorAll("[data-down]").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation(); moveTrack(+b.dataset.down, 1);
+  }));
 }
 
 function renderTimeline(){
@@ -778,6 +875,13 @@ $("urlInput").addEventListener("keydown", e => { if(e.key === "Enter") addTrack(
 $("saveMarksBtn").addEventListener("click", saveMarks);
 $("savePlBtn").addEventListener("click", savePlaylist);
 
+$("shuffleBtn").addEventListener("click", () => {
+  state.shuffle = !state.shuffle;
+  state.playedIdx = (state.shuffle && state.index >= 0) ? [state.index] : [];
+  $("shuffleBtn").classList.toggle("on", state.shuffle);
+  status(state.shuffle ? "셔플 켜짐 — 곡이 끝나면 무작위로 다음 곡" : "셔플 꺼짐 — 순서대로 재생");
+});
+
 const hb = $("holdBtn");
 hb.addEventListener("mousedown", holdDown);
 hb.addEventListener("touchstart", holdDown, {passive:false});
@@ -811,6 +915,7 @@ async function enter(){
     await api({ action:"auth" });
     $("gate").style.display = "none";
     $("who").textContent = nick;
+    $("avatar").textContent = nick.charAt(0);
     status(nick + " 로 시작합니다", "live");
     loadPlaylist();
   }catch(e){
