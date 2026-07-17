@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MUTE POINT</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23191a1f'/><g fill='%23ece7dd'><rect x='4' y='10' width='4' height='12' rx='2'/><rect x='10' y='4' width='4' height='24' rx='2'/><rect x='24' y='8' width='4' height='16' rx='2'/></g><rect x='16' y='14' width='6' height='4' rx='2' fill='%23e5432f'/></svg>">
+<meta name="theme-color" content="#191a1f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  :root{
+    --ink:#191a1f;
+    --ink-2:#22242b;
+    --ink-3:#2c2f38;
+    --cream:#ece7dd;
+    --cream-dim:#8f8d88;
+    --amber:#ffb020;
+    --cut:#e5432f;
+    --line:#383b45;
+    --radius:4px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--ink);
+    color:var(--cream);
+    font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+  /* ---------- 입장 화면 ---------- */
+  .gate{
+    position:fixed;inset:0;z-index:50;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .gate-box{width:100%;max-width:360px;text-align:center}
+  .gate-box h1{font-size:28px;font-weight:900;letter-spacing:-.04em;margin:12px 0 6px}
+  .gate-box .lead{font-size:13px;color:var(--cream-dim);margin-bottom:20px;line-height:1.6}
+  .gate-box input{
+    width:100%;margin-bottom:10px;background:var(--ink-2);border:1px solid var(--line);
+    color:var(--cream);padding:12px;border-radius:2px;
+    font-family:inherit;font-size:15px;text-align:center;
+  }
+  .gate-box input::placeholder{color:#5c5f68}
+  .gate-box input:focus{outline:none;border-color:var(--amber)}
+  .gate-box button{
+    width:100%;background:var(--amber);color:var(--ink);border:0;border-radius:2px;
+    padding:13px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;
+  }
+  .gate-box button:disabled{opacity:.5;cursor:not-allowed}
+  .gate-err{margin-top:12px;font-size:13px;color:var(--cut);min-height:18px}
+  .gate-warn{
+    margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:2px;
+    font-size:12px;color:var(--cream-dim);line-height:1.65;text-align:left;
+  }
+  .gate-warn b{color:var(--cut)}
+
+  /* ---------- 헤더 ---------- */
+  header{
+    border-bottom:1px solid var(--line);
+    padding:18px 24px;
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  }
+  .logomark{
+    width:30px;height:20px;align-self:center;flex-shrink:0;color:var(--cream);
+  }
+  .wordmark{font-size:26px;font-weight:900;letter-spacing:-0.04em}
+  .tagline{font-size:11px;letter-spacing:0.18em;color:var(--cream-dim);text-transform:uppercase}
+  .subtitle{font-size:13px;color:var(--cream-dim);margin-left:auto}
+
+  /* ---------- 레이아웃 ---------- */
+  main{
+    max-width:1180px;margin:0 auto;padding:24px;
+    display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;
+  }
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;padding:16px;gap:16px}
+    header{padding:14px 16px}
+    .subtitle{width:100%;margin-left:0}
+  }
+
+  .panel{
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+  }
+  .panel-head{
+    padding:12px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .panel-head h2{
+    font-size:11px;font-weight:700;letter-spacing:0.16em;
+    text-transform:uppercase;color:var(--cream-dim);
+  }
+
+  /* ---------- 플레이어 ---------- */
+  .stage{position:relative;background:#000;aspect-ratio:16/9;width:100%}
+  .stage iframe{width:100%;height:100%;display:block;border:0}
+  #ytHost{position:absolute;inset:0}
+
+  /* 검열 바 — 시그니처 */
+  .censor{
+    position:absolute;inset:0;
+    background:rgba(9,9,11,.94);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;
+    transition:opacity .09s linear;
+  }
+  .censor.on{opacity:1}
+  .censor-mark{
+    font-family:"JetBrains Mono",monospace;font-weight:700;
+    font-size:clamp(28px,7vw,64px);letter-spacing:.1em;
+    color:var(--cut);
+  }
+  .censor-label{
+    position:absolute;bottom:14px;
+    font-size:11px;letter-spacing:.2em;color:var(--cream-dim);
+    text-transform:uppercase;
+  }
+  .empty-stage{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:8px;
+    color:var(--cream-dim);font-size:14px;text-align:center;padding:20px;
+  }
+
+  /* ---------- 타임라인 ---------- */
+  .timeline-wrap{padding:16px}
+  .timeline{
+    position:relative;height:34px;background:var(--ink-3);
+    border-radius:2px;cursor:pointer;overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .tl-seg{
+    position:absolute;top:0;bottom:0;
+    background:var(--cream);
+  }
+  .tl-seg.pending{
+    background:repeating-linear-gradient(45deg,var(--cut),var(--cut) 3px,#a52d20 3px,#a52d20 6px);
+  }
+  .tl-seg.fresh{
+    box-shadow:0 0 0 1.5px var(--amber), 0 0 10px rgba(255,176,32,.55);
+    z-index:1;
+  }
+  .tl-head{
+    position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--amber);
+    box-shadow:0 0 8px var(--amber);left:0;
+  }
+  .tl-meta{
+    display:flex;justify-content:space-between;margin-top:8px;
+    font-size:12px;color:var(--cream-dim);
+  }
+
+  /* ---------- 홀드 버튼 ---------- */
+  .hold-zone{padding:0 16px 16px}
+  .hold-btn{
+    width:100%;padding:20px;border:1px solid var(--line);
+    background:var(--ink-3);color:var(--cream);
+    border-radius:var(--radius);cursor:pointer;
+    font-family:inherit;font-size:16px;font-weight:700;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    user-select:none;-webkit-user-select:none;touch-action:none;
+    transition:background .08s,border-color .08s,transform .06s;
+  }
+  .hold-btn:hover{border-color:var(--cream-dim)}
+  .hold-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .hold-btn.holding{
+    background:var(--cut);border-color:var(--cut);color:#fff;transform:scale(.995);
+  }
+  .hold-btn small{
+    font-size:11px;font-weight:400;letter-spacing:.08em;
+    color:var(--cream-dim);text-transform:uppercase;
+  }
+  .hold-btn.holding small{color:rgba(255,255,255,.75)}
+  .hold-btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* ---------- 구간 목록 ---------- */
+  .marks{padding:0 16px 16px}
+  .mark-row{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border:1px solid var(--line);border-radius:2px;
+    margin-bottom:6px;font-size:13px;background:var(--ink);
+  }
+  .mark-row.fresh{
+    border-color:var(--amber);
+    box-shadow:0 0 0 1px var(--amber), 0 0 16px rgba(255,176,32,.22);
+    animation:flash .6s ease-out;
+  }
+  @keyframes flash{
+    from{ background:rgba(255,176,32,.22) }
+    to{ background:var(--ink) }
+  }
+  .mark-row .tag{
+    font-size:10px;letter-spacing:.1em;padding:2px 5px;border-radius:2px;
+    text-transform:uppercase;font-weight:700;
+  }
+  .tag.saved{background:var(--cream);color:var(--ink)}
+  .tag.fresh{background:var(--amber);color:var(--ink)}
+  .tag.pending{background:var(--cut);color:#fff}
+  .mark-row .time{margin-left:auto;color:var(--cream-dim)}
+  .icon-btn{
+    background:none;border:1px solid var(--line);color:var(--cream-dim);
+    border-radius:2px;cursor:pointer;font-size:11px;padding:3px 7px;
+    font-family:inherit;
+  }
+  .icon-btn:hover{color:var(--cut);border-color:var(--cut)}
+
+  /* ---------- 플레이리스트 ---------- */
+  .add-row{display:flex;gap:8px;padding:16px;border-bottom:1px solid var(--line)}
+  input[type=text]{
+    flex:1;min-width:0;background:var(--ink);border:1px solid var(--line);
+    color:var(--cream);padding:10px 12px;border-radius:2px;
+    font-family:"JetBrains Mono",monospace;font-size:12px;
+  }
+  input[type=text]::placeholder{color:#5c5f68}
+  input[type=text]:focus{outline:none;border-color:var(--amber)}
+  button.primary{
+    background:var(--amber);color:var(--ink);border:0;border-radius:2px;
+    padding:10px 16px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;
+    white-space:nowrap;
+  }
+  button.primary:hover{filter:brightness(1.1)}
+  button.primary:disabled{opacity:.4;cursor:not-allowed}
+  button.ghost{
+    background:none;border:1px solid var(--line);color:var(--cream);
+    border-radius:2px;padding:9px 14px;cursor:pointer;font-family:inherit;font-size:13px;
+  }
+  button.ghost:hover{border-color:var(--cream-dim)}
+
+  .track-list{max-height:420px;overflow-y:auto}
+  .track{
+    display:flex;gap:12px;padding:12px 16px;cursor:pointer;
+    border-bottom:1px solid var(--ink-3);align-items:center;
+  }
+  .track:hover{background:var(--ink-3)}
+  .track.active{background:var(--ink-3);box-shadow:inset 3px 0 0 var(--amber)}
+  .track .num{
+    font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--cream-dim);
+    width:18px;flex-shrink:0;
+  }
+  .track img{width:64px;height:36px;object-fit:cover;border-radius:2px;flex-shrink:0;background:var(--ink)}
+  .track .info{min-width:0;flex:1}
+  .track .t-title{
+    font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .track .t-sub{font-size:11px;color:var(--cream-dim);margin-top:2px}
+  .track .t-sub b{color:var(--cut)}
+  .empty-list{padding:32px 16px;text-align:center;color:var(--cream-dim);font-size:13px;line-height:1.7}
+
+  .status{
+    padding:10px 16px;font-size:12px;color:var(--cream-dim);
+    border-top:1px solid var(--line);min-height:38px;display:flex;align-items:center;gap:8px;
+  }
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--cream-dim);flex-shrink:0}
+  .dot.live{background:var(--amber)}
+  .dot.err{background:var(--cut)}
+
+  .hint{
+    font-size:12px;color:var(--cream-dim);padding:0 16px 16px;line-height:1.6;
+  }
+  kbd{
+    font-family:"JetBrains Mono",monospace;font-size:11px;
+    border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;
+    padding:1px 5px;color:var(--cream);
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <svg viewBox="0 0 30 20" style="width:66px;height:44px;color:var(--cream)" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g fill="currentColor">
+        <rect x="0"  y="6"    width="2" height="8"  rx="1"/>
+        <rect x="3"  y="3"    width="2" height="14" rx="1"/>
+        <rect x="6"  y="7"    width="2" height="6"  rx="1"/>
+        <rect x="9"  y="1.5"  width="2" height="17" rx="1"/>
+      </g>
+      <rect x="12.5" y="9.25" width="7" height="1.5" rx="0.75" fill="var(--cut)"/>
+      <g fill="currentColor">
+        <rect x="21" y="4.5"  width="2" height="11" rx="1"/>
+        <rect x="24" y="2"    width="2" height="16" rx="1"/>
+        <rect x="27" y="6.5"  width="2" height="7"  rx="1"/>
+      </g>
+    </svg>
+    <h1>뮤트포인트</h1>
+    <div class="lead">닉네임과 PIN 4자리를 넣으면<br>내 플리와 음소거 구간이 저장됩니다.</div>
+    <input id="gNick" type="text" placeholder="닉네임" autocomplete="off" maxlength="12">
+    <input id="gPin" type="password" placeholder="PIN 숫자 4자리" inputmode="numeric" maxlength="4" autocomplete="off">
+    <button id="gBtn">시작하기</button>
+    <div class="gate-err" id="gErr"></div>
+    <div class="gate-warn">
+      <b>로그인이 아닙니다.</b> 내 데이터를 남과 구분하기 위한 번호일 뿐이에요.
+      PIN은 구글시트에 암호화 없이 그대로 저장됩니다.
+      <b>평소 쓰는 비밀번호는 절대 넣지 마세요.</b>
+    </div>
+  </div>
+</div>
+
+<header>
+  <svg class="logomark" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g fill="currentColor">
+      <rect x="0"  y="6"    width="2" height="8"  rx="1"/>
+      <rect x="3"  y="3"    width="2" height="14" rx="1"/>
+      <rect x="6"  y="7"    width="2" height="6"  rx="1"/>
+      <rect x="9"  y="1.5"  width="2" height="17" rx="1"/>
+    </g>
+    <rect x="12.5" y="9.25" width="7" height="1.5" rx="0.75" fill="var(--cut)"/>
+    <g fill="currentColor">
+      <rect x="21" y="4.5"  width="2" height="11" rx="1"/>
+      <rect x="24" y="2"    width="2" height="16" rx="1"/>
+      <rect x="27" y="6.5"  width="2" height="7"  rx="1"/>
+    </g>
+  </svg>
+  <div class="wordmark">뮤트포인트</div>
+  <div class="tagline mono">MUTEPOINT</div>
+  <div class="subtitle"><b class="mono" id="who" style="color:var(--amber)"></b></div>
+</header>
+
+<main>
+  <!-- 왼쪽: 플레이어 -->
+  <section class="panel">
+    <div class="stage">
+      <div id="ytHost"></div>
+      <div class="empty-stage" id="emptyStage">
+        <div>오른쪽에 유튜브 주소를 붙여넣어 시작하세요</div>
+      </div>
+      <div class="censor" id="censor" aria-hidden="true">
+        <div class="censor-mark mono">■ ■ ■</div>
+        <div class="censor-label mono">Muted</div>
+      </div>
+    </div>
+
+    <div class="timeline-wrap">
+      <div class="timeline" id="timeline" role="slider" aria-label="재생 위치" tabindex="0">
+        <div class="tl-head" id="tlHead"></div>
+      </div>
+      <div class="tl-meta mono">
+        <span id="curTime">0:00</span>
+        <span id="markCount">등록된 음소거 구간 0개</span>
+        <span id="durTime">0:00</span>
+      </div>
+    </div>
+
+    <div class="hold-zone">
+      <button class="hold-btn" id="holdBtn" disabled>
+        욕설 구간 표시 — 꾹 누르고 있기
+        <small>누르는 동안 음소거 · 뗀 순간 구간이 기록됩니다</small>
+      </button>
+    </div>
+
+    <div class="hint">
+      <kbd>Space</kbd> 로도 누를 수 있어요. 지금 차에서 수동으로 하던 그 동작 그대로입니다. 차이는 딱 하나 — <b style="color:var(--cream)">한 번만 누르면 됩니다.</b> 표시한 구간은 바로 저장되고, 다음부터 이 곡은 알아서 음소거됩니다.
+    </div>
+
+    <div class="marks" id="marks"></div>
+  </section>
+
+  <!-- 오른쪽: 플레이리스트 -->
+  <aside class="panel">
+    <div class="panel-head">
+      <h2>내 플레이리스트</h2>
+      <span class="mono" id="plCount" style="font-size:11px;color:var(--cream-dim)">0곡</span>
+    </div>
+
+    <div class="add-row">
+      <input type="text" id="urlInput" placeholder="youtube.com/watch?v=..." autocomplete="off">
+      <button class="primary" id="addBtn">추가</button>
+    </div>
+
+    <div class="track-list" id="trackList">
+      <div class="empty-list">
+        아직 곡이 없습니다.<br>유튜브 주소를 붙여넣고 추가하세요.
+      </div>
+    </div>
+
+    <div style="padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--line)">
+      <button class="ghost" id="saveMarksBtn" style="flex:1">저장 안 된 구간 저장</button>
+      <button class="ghost" id="savePlBtn" style="flex:1">플리 저장</button>
+    </div>
+
+    <div class="status">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">준비됨</span>
+    </div>
+  </aside>
+</main>
+
+<script>
+/* ============================================================
+   뮤트포인트 (MUTEPOINT) — 욕설 구간 자동 음소거 플레이어
+   DB: 구글시트 (Apps Script 웹앱)
+   ↓ Apps Script 배포 후 받은 URL을 여기에 붙여넣으세요
+   ============================================================ */
+const CONFIG = {
+  SHEET_API: "https://script.google.com/macros/s/AKfycbwQ12FSaQVwFqqjN3us18gBiG5bJC3FeToGilf4Ka1DOuHiiPMxEresWTOrwioU2Bcc/exec"   // 예: "https://script.google.com/macros/s/AKfy.../exec"
+};
+
+/* ---------- 상태 ---------- */
+const state = {
+  user: null,          // {nick, pin}
+  playlist: [],        // {id, title, thumb}
+  index: -1,
+  saved: {},           // videoId -> [{start,end}]  (시트에서 불러온 것)
+  pending: {},         // videoId -> [{start,end}]  (내가 방금 표시한 것)
+  lastMark: null,      // 방금 찍은 구간 {id,start,end} — 강조 표시용
+  muted: false,
+  holding: false,
+  holdStart: null,
+  duration: 0
+};
+
+/* ---------- 유틸 ---------- */
+const $ = id => document.getElementById(id);
+const fmt = s => {
+  if(!isFinite(s) || s<0) s=0;
+  const m = Math.floor(s/60), sec = Math.floor(s%60);
+  return m + ":" + String(sec).padStart(2,"0");
+};
+const curId = () => state.index>=0 ? state.playlist[state.index].id : null;
+const allMarks = id => [...(state.saved[id]||[]), ...(state.pending[id]||[])];
+
+function extractId(url){
+  if(!url) return null;
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
+  if(m) return m[1];
+  const t = url.trim();
+  return /^[A-Za-z0-9_-]{11}$/.test(t) ? t : null;
+}
+
+function status(text, kind){
+  $("statusText").textContent = text;
+  const d = $("statusDot");
+  d.className = "dot" + (kind ? " " + kind : "");
+}
+
+/* ---------- 구글시트 연동 ---------- */
+/* 읽기·쓰기 모두 POST 로 보냅니다.
+   GET 이면 PIN 이 주소창·서버 로그에 남아서요. */
+async function api(payload){
+  if(!CONFIG.SHEET_API) throw new Error("시트 주소가 아직 설정되지 않았습니다");
+  const body = Object.assign({}, payload);
+  if(state.user){ body.user = state.user.nick; body.pin = state.user.pin; }
+  // text/plain 으로 보내야 Apps Script 에서 CORS 프리플라이트가 안 걸립니다
+  const r = await fetch(CONFIG.SHEET_API, {
+    method: "POST",
+    headers: {"Content-Type": "text/plain;charset=utf-8"},
+    body: JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error("통신 실패 " + r.status);
+  const d = await r.json();
+  if(!d.ok) throw new Error(d.error || "알 수 없는 오류");
+  return d;
+}
+
+async function loadMarks(videoId){
+  state.saved[videoId] = state.saved[videoId] || [];
+  if(!CONFIG.SHEET_API){
+    status("시트 미연결 — 표시한 구간이 저장되지 않습니다", "err");
+    return;
+  }
+  try{
+    status("저장해둔 구간 불러오는 중…", "live");
+    const data = await api({ action:"getMarks", videoId: videoId });
+    state.saved[videoId] = (data.marks||[]).map(m => ({start:+m.start, end:+m.end}));
+    const n = state.saved[videoId].length;
+    status(n ? "내 구간 " + n + "개 불러옴 — 자동 음소거 켜짐" : "이 곡은 아직 표시된 구간이 없습니다", "live");
+    renderMarks(); renderTimeline(); renderPlaylist();
+  }catch(e){
+    status(e.message, "err");
+  }
+}
+
+/* 시작할 때 시트에서 내 플리 복원 */
+async function loadPlaylist(){
+  if(!CONFIG.SHEET_API) return;
+  try{
+    status("플레이리스트 불러오는 중…", "live");
+    const d = await api({ action:"getPlaylist" });
+    const tracks = (d.tracks||[]).filter(t => t && t.id);
+    if(!tracks.length){ status(state.user.nick + " — 저장된 곡 없음. 유튜브 주소를 넣어보세요", "live"); return; }
+    state.playlist = tracks.map(t => ({
+      id: t.id,
+      title: t.title || t.id,
+      thumb: `https://i.ytimg.com/vi/${t.id}/mqdefault.jpg`
+    }));
+    renderPlaylist();
+    status("플리 " + state.playlist.length + "곡 불러옴 — 곡을 눌러 재생하세요", "live");
+  }catch(e){ status(e.message, "err"); }
+}
+
+/* ---------- 유튜브 플레이어 ---------- */
+let player = null, apiReady = false;
+
+window.onYouTubeIframeAPIReady = function(){
+  apiReady = true;
+  player = new YT.Player("ytHost", {
+    height: "100%", width: "100%",
+    playerVars: { rel:0, playsinline:1, modestbranding:1 },
+    events: {
+      onReady: () => { if(state.index>=0) play(state.index); },
+      onStateChange: onPlayerState,
+      onError: (e) => {
+        if(e.data === 101 || e.data === 150){
+          status("이 영상은 소유자가 외부 재생을 막아뒀습니다 — 다른 업로드본(Topic 채널 등)을 넣어보세요", "err");
+        } else {
+          status("영상을 불러올 수 없습니다 (코드 " + e.data + ")", "err");
+        }
+      }
+    }
+  });
+};
+
+function onPlayerState(e){
+  if(e.data === YT.PlayerState.ENDED) next();
+  if(e.data === YT.PlayerState.PLAYING){
+    state.duration = player.getDuration() || 0;
+    $("durTime").textContent = fmt(state.duration);
+    renderTimeline();
+  }
+}
+
+(function loadYT(){
+  const s = document.createElement("script");
+  s.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(s);
+})();
+
+/* ---------- 음소거 루프 ---------- */
+setInterval(() => {
+  if(!player || typeof player.getCurrentTime !== "function") return;
+  let t;
+  try { t = player.getCurrentTime(); } catch(e){ return; }
+  if(!isFinite(t)) return;
+
+  const id = curId();
+  if(!id) return;
+
+  // 재생 헤드
+  if(state.duration > 0){
+    $("tlHead").style.left = (t/state.duration*100) + "%";
+  }
+  $("curTime").textContent = fmt(t);
+
+  // 홀드 중이면 그대로 음소거 유지
+  if(state.holding) return;
+
+  const hit = allMarks(id).some(m => t >= m.start && t <= m.end);
+  if(hit && !state.muted){ setMuted(true); }
+  else if(!hit && state.muted){ setMuted(false); }
+}, 80);
+
+function setMuted(on){
+  state.muted = on;
+  try { on ? player.mute() : player.unMute(); } catch(e){}
+  $("censor").classList.toggle("on", on);
+}
+
+/* ---------- 재생 제어 ---------- */
+function play(i){
+  if(i < 0 || i >= state.playlist.length) return;
+  state.index = i;
+  state.duration = 0;
+  state.lastMark = null;
+  $("emptyStage").style.display = "none";
+  $("holdBtn").disabled = false;
+  if(player && player.loadVideoById){
+    player.loadVideoById(state.playlist[i].id);
+  }
+  setMuted(false);
+  renderPlaylist(); renderMarks(); renderTimeline();
+  loadMarks(state.playlist[i].id);
+}
+function next(){
+  if(state.index + 1 < state.playlist.length) play(state.index + 1);
+  else status("플레이리스트 끝");
+}
+
+/* ---------- 곡 추가 ---------- */
+async function addTrack(){
+  const raw = $("urlInput").value;
+  const id = extractId(raw);
+  if(!id){ status("유튜브 주소를 확인해주세요", "err"); return; }
+  if(state.playlist.some(t => t.id === id)){ status("이미 플리에 있는 곡입니다"); return; }
+
+  $("addBtn").disabled = true;
+  const track = { id, title: id, thumb: `https://i.ytimg.com/vi/${id}/mqdefault.jpg` };
+  state.playlist.push(track);
+  $("urlInput").value = "";
+  renderPlaylist();
+
+  // 제목 가져오기 (oEmbed — 키 없이 됩니다)
+  try{
+    const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+    if(r.ok){ const d = await r.json(); track.title = d.title; }
+  }catch(e){ /* 제목만 못 가져온 것이므로 무시 */ }
+
+  $("addBtn").disabled = false;
+  renderPlaylist();
+  if(state.index < 0) play(0);
+  else status("추가됨: " + track.title);
+  savePlaylist();   // 곡 추가하면 바로 시트에 저장
+}
+
+/* ---------- 홀드(구간 표시) ---------- */
+function holdDown(e){
+  if(state.index < 0 || state.holding) return;
+  if(e) e.preventDefault();
+  state.holding = true;
+  state.holdStart = player.getCurrentTime();
+  setMuted(true);
+  $("holdBtn").classList.add("holding");
+}
+function holdUp(){
+  if(!state.holding) return;
+  state.holding = false;
+  $("holdBtn").classList.remove("holding");
+  const id = curId();
+  const end = player.getCurrentTime();
+  // 앞뒤 여유 0.15초 — 사람 반응속도 보정
+  const start = Math.max(0, state.holdStart - 0.15);
+  if(end - state.holdStart < 0.08){ setMuted(false); return; } // 헛클릭
+  const mark = { start: +start.toFixed(2), end: +(end + 0.15).toFixed(2) };
+
+  // 이미 표시된 구간과 겹치면 추가하지 않습니다 (실수로 두 번 누른 경우)
+  if(allMarks(id).some(x => mark.start < x.end && mark.end > x.start)){
+    setMuted(false);
+    status("이미 표시된 구간과 겹쳐서 추가하지 않았어요", "err");
+    return;
+  }
+
+  state.pending[id] = state.pending[id] || [];
+  state.pending[id].push(mark);
+  state.lastMark = { id: id, start: mark.start, end: mark.end };
+  setMuted(false);
+  renderMarks(); renderTimeline(); renderPlaylist();
+  status("구간 표시됨 " + fmt(start) + "–" + fmt(end));
+  saveMarks();   // 표시하는 즉시 내 시트에 저장
+}
+
+/* ---------- 저장 ---------- */
+async function saveMarks(){
+  const id = curId();
+  if(!id){ status("재생 중인 곡이 없습니다", "err"); return; }
+  const list = state.pending[id] || [];
+  if(!list.length){ status("저장할 새 구간이 없습니다"); return; }
+  try{
+    status("내 구간 저장 중…", "live");
+    await api({ action:"saveMarks", videoId:id, title: state.playlist[state.index].title, marks:list });
+    state.saved[id] = [...(state.saved[id]||[]), ...list];
+    state.pending[id] = [];
+    renderMarks(); renderTimeline(); renderPlaylist();
+    status("저장 완료 — 다음부터 이 곡은 자동 음소거됩니다", "live");
+  }catch(e){ status(e.message + " · 다시 저장 버튼을 눌러주세요", "err"); }
+}
+async function savePlaylist(){
+  if(!state.playlist.length){ status("플리가 비어 있습니다"); return; }
+  try{
+    status("플레이리스트 저장 중…", "live");
+    await api({ action:"savePlaylist", tracks: state.playlist.map(t => ({id:t.id, title:t.title})) });
+    status("플레이리스트 " + state.playlist.length + "곡 저장됨", "live");
+  }catch(e){ status(e.message, "err"); }
+}
+
+/* ---------- 렌더 ---------- */
+function renderPlaylist(){
+  const el = $("trackList");
+  $("plCount").textContent = state.playlist.length + "곡";
+  if(!state.playlist.length){
+    el.innerHTML = `<div class="empty-list">아직 곡이 없습니다.<br>유튜브 주소를 붙여넣고 추가하세요.</div>`;
+    return;
+  }
+  el.innerHTML = state.playlist.map((t,i) => {
+    const n = allMarks(t.id).length;
+    const p = (state.pending[t.id]||[]).length;
+    let sub = n ? `음소거 구간 ${n}개` : "구간 미등록";
+    if(p) sub += ` · <b>제보 대기 ${p}</b>`;
+    return `<div class="track ${i===state.index?"active":""}" data-i="${i}">
+      <span class="num mono">${String(i+1).padStart(2,"0")}</span>
+      <img src="${t.thumb}" alt="">
+      <div class="info">
+        <div class="t-title">${escapeHtml(t.title)}</div>
+        <div class="t-sub">${sub}</div>
+      </div>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".track").forEach(n =>
+    n.addEventListener("click", () => play(+n.dataset.i)));
+}
+
+function renderTimeline(){
+  const tl = $("timeline");
+  tl.querySelectorAll(".tl-seg").forEach(n => n.remove());
+  const id = curId();
+  if(!id || !state.duration) return;
+  const isFresh = m => state.lastMark && state.lastMark.id === id &&
+    Math.abs(state.lastMark.start - m.start) < 0.01 &&
+    Math.abs(state.lastMark.end - m.end) < 0.01;
+  const put = (m, cls) => {
+    const d = document.createElement("div");
+    d.className = "tl-seg " + cls + (isFresh(m) ? " fresh" : "");
+    d.style.left = (m.start/state.duration*100) + "%";
+    d.style.width = Math.max(0.4, (m.end-m.start)/state.duration*100) + "%";
+    tl.appendChild(d);
+  };
+  (state.saved[id]||[]).forEach(m => put(m, "saved"));
+  (state.pending[id]||[]).forEach(m => put(m, "pending"));
+  $("markCount").textContent = "내 음소거 구간 " + allMarks(id).length + "개";
+}
+
+function renderMarks(){
+  const el = $("marks");
+  const id = curId();
+  if(!id){ el.innerHTML = ""; return; }
+  const rows = [
+    ...(state.saved[id]||[]).map(m => ({...m, saved:true})),
+    ...(state.pending[id]||[]).map(m => ({...m, saved:false}))
+  ].sort((a,b) => a.start - b.start);
+  if(!rows.length){ el.innerHTML = ""; return; }
+  el.innerHTML = rows.map((m,i) => {
+    const fresh = state.lastMark && state.lastMark.id === id &&
+      Math.abs(state.lastMark.start - m.start) < 0.01 &&
+      Math.abs(state.lastMark.end - m.end) < 0.01;
+    return `
+    <div class="mark-row ${fresh?"fresh":""}">
+      <span class="tag ${fresh?"fresh":(m.saved?"saved":"pending")}">${fresh?"방금":(m.saved?"저장됨":"대기")}</span>
+      <span class="mono">${fmt(m.start)} → ${fmt(m.end)}</span>
+      <span class="time mono">${(m.end-m.start).toFixed(1)}초</span>
+      <button class="icon-btn" data-play="${i}">듣기</button>
+      <button class="icon-btn" data-del="${i}">삭제</button>
+    </div>`;
+  }).join("");
+  const freshEl = el.querySelector(".mark-row.fresh");
+  if(freshEl) freshEl.scrollIntoView({ block:"nearest" });
+  el.querySelectorAll("[data-play]").forEach(b => b.addEventListener("click", () => {
+    const m = rows[+b.dataset.play];
+    try { player.seekTo(Math.max(0, m.start - 2), true); player.playVideo(); } catch(e){}
+  }));
+  el.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => {
+    deleteMark(rows[+b.dataset.del], id, b);
+  }));
+}
+
+/* 구간 삭제 — 저장된 것은 시트에서도 지웁니다 */
+async function deleteMark(m, id, btn){
+  if(!m.saved){
+    state.pending[id] = (state.pending[id]||[]).filter(x => x.start !== m.start);
+    renderMarks(); renderTimeline(); renderPlaylist();
+    return;
+  }
+  btn.disabled = true; btn.textContent = "삭제 중";
+  try{
+    await api({ action:"deleteMark", videoId:id, start:m.start, end:m.end });
+    state.saved[id] = (state.saved[id]||[]).filter(x => !(x.start === m.start && x.end === m.end));
+    setMuted(false);
+    status("구간 삭제됨", "live");
+    renderMarks(); renderTimeline(); renderPlaylist();
+  }catch(e){
+    status("삭제 실패: " + e.message, "err");
+    btn.disabled = false; btn.textContent = "삭제";
+  }
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---------- 이벤트 ---------- */
+$("addBtn").addEventListener("click", addTrack);
+$("urlInput").addEventListener("keydown", e => { if(e.key === "Enter") addTrack(); });
+$("saveMarksBtn").addEventListener("click", saveMarks);
+$("savePlBtn").addEventListener("click", savePlaylist);
+
+const hb = $("holdBtn");
+hb.addEventListener("mousedown", holdDown);
+hb.addEventListener("touchstart", holdDown, {passive:false});
+window.addEventListener("mouseup", holdUp);
+window.addEventListener("touchend", holdUp);
+window.addEventListener("keydown", e => {
+  if(e.code === "Space" && document.activeElement.tagName !== "INPUT"){ holdDown(e); }
+});
+window.addEventListener("keyup", e => { if(e.code === "Space") holdUp(); });
+
+$("timeline").addEventListener("click", e => {
+  if(!state.duration || !player) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  player.seekTo(((e.clientX - r.left)/r.width) * state.duration, true);
+});
+
+/* ---------- 입장 ---------- */
+function gErr(msg){ $("gErr").textContent = msg || ""; }
+
+async function enter(){
+  const nick = $("gNick").value.trim();
+  const pin  = $("gPin").value.trim();
+  if(!nick){ gErr("닉네임을 입력해주세요"); return; }
+  if(!/^\d{4}$/.test(pin)){ gErr("PIN은 숫자 4자리예요"); return; }
+  if(!CONFIG.SHEET_API){ gErr("CONFIG.SHEET_API 가 비어 있습니다"); return; }
+
+  const btn = $("gBtn");
+  btn.disabled = true; btn.textContent = "확인 중…"; gErr("");
+  state.user = { nick, pin };
+  try{
+    await api({ action:"auth" });
+    $("gate").style.display = "none";
+    $("who").textContent = nick;
+    status(nick + " 로 시작합니다", "live");
+    loadPlaylist();
+  }catch(e){
+    state.user = null;
+    gErr(e.message);
+    btn.disabled = false; btn.textContent = "시작하기";
+  }
+}
+
+$("gBtn").addEventListener("click", enter);
+["gNick","gPin"].forEach(id =>
+  $(id).addEventListener("keydown", e => { if(e.key === "Enter") enter(); }));
+
+// PIN 은 숫자만 — 붙여넣기·한글 입력도 걸러집니다
+$("gPin").addEventListener("input", e => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+});
+
+if(!CONFIG.SHEET_API) gErr("CONFIG.SHEET_API 가 비어 있습니다 — 코드에 웹앱 URL을 넣어주세요");
+$("gNick").focus();
+</script>
+</body>
+</html>
